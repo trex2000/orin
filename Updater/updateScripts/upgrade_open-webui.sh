@@ -2,9 +2,9 @@
 docker stop open-webui
 docker rm open-webui
 docker pull ghcr.io/open-webui/open-webui:main
-docker run -d -p 3000:8080 \
+docker run -d -p 8081:8080 \
     --add-host=host.docker.internal:host-gateway \
-    -v open-webui:/app/backend/data \
+    -v /var/lib/open-webui:/app/backend/data \
     --name open-webui \
     --restart always \
     ghcr.io/open-webui/open-webui:main

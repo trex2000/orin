@@ -3,7 +3,7 @@
 # Default to the 30B coder model unless specified otherwise
 #MODEL_NAME=${1:-qwen3-coder:30b}
 #MODEL_NAME=${1:-deepseek-r1:32b}
-MODEL_NAME=${1:-qwen3.6:latest}
+MODEL_NAME=${1:-qwen3.8:27B}
 
 # Configuration
 SERVICE_NAME="ollama"
@@ -14,10 +14,15 @@ echo "--- Preparing Local Ollama Installation ---"
 sudo mkdir -p "$LOG_DIR"
 sudo chown ollama:ollama "$LOG_DIR"
 
+# Ensure the ollama user has hardware access to the new JetPack 6 nodes
+if id -u ollama >/dev/null 2>&1; then
+    sudo usermod -aG video,render,debug ollama
+fi
+
 # 1. Download and run official installer
 echo "Downloading and installing Ollama..."
-curl -fsSL https://ollama.com/install.sh | sh
-rm -f install.sh
+#curl -fsSL https://ollama.com/install.sh | sh
+#rm -f install.sh
 
 # 2. Configure Environment Variables
 echo "Configuring environment variables in $SERVICE_FILE..."
@@ -38,9 +43,11 @@ Group=ollama
 Restart=always
 RestartSec=60
 Environment="PATH=$PATH"
+Environment="OLLAMA_LLM_LIBRARY=cuda"
+Environment="OLLAMA_IGPU_ENABLE=1"
 Environment="OLLAMA_HOST=0.0.0.0:11434"
 Environment="OLLAMA_NUM_GPU=99"
-Environment="OLLAMA_LOAD_TIMEOUT=180"
+Environment="OLLAMA_LOAD_TIMEOUT=3600"
 Environment="OLLAMA_GPU_LAYERS=-1"
 Environment="OLLAMA_KEEP_ALIVE=-1"
 Environment="OLLAMA_NUM_PARALLEL=3"
@@ -51,11 +58,6 @@ Environment="OLLAMA_MAX_LOADED_MODELS=1"
 Environment="OLLAMA_FLASH_ATTENTION=1"
 Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
 Environment="OLLAMA_CONTEXT_LENGTH=65536"
-
-
-# OLLAMA_MAX_VRAM is commented out. 5368709120 bytes is only 5GB.
-# This would force the 30B model onto the CPU. Let Ollama auto-detect the 64GB unified memory.
-#Environment="OLLAMA_MAX_VRAM=5368709120"
 StandardOutput=append:$LOG_DIR/ollama.log
 StandardError=append:$LOG_DIR/ollama.log
 

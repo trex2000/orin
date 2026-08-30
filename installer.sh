@@ -33,22 +33,22 @@ UPGRADES=$(apt-get -s upgrade | awk '/^[0-9]+ upgraded,/ {print $1}')
 
 if [[ "$UPGRADES" =~ ^[1-9][0-9]*$ ]]; then
     echo "Found $UPGRADES package(s) to upgrade. Commencing upgrade..."
-    sudo apt upgrade -y
+    #sudo apt upgrade -y
 else
     echo "System is already up-to-date. Skipping upgrade."
 fi
 
 # For absolutely no power limits (MAXN)
 echo "Setting CPU clocks to uncapped. Warning: YOu must use an 90W 19V power supply, otherwise leave this uncommented"
-sudo nvpmodel -m 0
+#sudo nvpmodel -m 0
 
 echo ">>> Checking base system packages..."
 PACKAGES_TO_INSTALL=""
 
 # Check if nvidia-jetpack is installed
-if ! dpkg -s nvidia-jetpack >/dev/null 2>&1; then
-    PACKAGES_TO_INSTALL+=" nvidia-jetpack"
-fi
+#if ! dpkg -s nvidia-jetpack >/dev/null 2>&1; then
+    #PACKAGES_TO_INSTALL+=" nvidia-jetpack"
+#fi
 
 # Check if midnight commander is installed
 if ! command -v mc >/dev/null 2>&1; then
@@ -103,7 +103,7 @@ fi
 echo ">>> Checking if Docker is installed..."
 if ! command -v docker >/dev/null 2>&1; then
     echo "Docker not found. Installing docker.io..."
-    sudo apt install docker.io -y
+    sudo apt install docker.io docker-compose-plugin -y
     sudo systemctl enable --now docker
     # $USER automatically grabs the user running the script (e.g., cgmures)
     sudo usermod -aG docker "$USER"

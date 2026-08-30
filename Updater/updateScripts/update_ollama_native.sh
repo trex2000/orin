@@ -3,48 +3,41 @@
 # Default to the 30B coder model unless specified otherwise
 #MODEL_NAME=${1:-qwen3-coder:30b}
 #MODEL_NAME=${1:-deepseek-r1:32b}
-MODEL_NAME=${1:-qwen3.8:27B}
-
+#MODEL_NAME=${1:-qwen3.8:27B}
+MODEL_NAME=${1:-qwen2.5:0.5b}
 # Configuration
 SERVICE_NAME="ollama"
-SERVICE_FILE="/etc/systemd/system/ollama.service"
+SERVICE_FILE="/etc/systemd/system/ollama.service.d/override.conf"
 LOG_DIR="/var/log/ollama"
 
-echo "--- Preparing Local Ollama Installation ---"
-sudo mkdir -p "$LOG_DIR"
-sudo chown ollama:ollama "$LOG_DIR"
-
-# Ensure the ollama user has hardware access to the new JetPack 6 nodes
-if id -u ollama >/dev/null 2>&1; then
-    sudo usermod -aG video,render,debug ollama
-fi
 
 # 1. Download and run official installer
 echo "Downloading and installing Ollama..."
-#curl -fsSL https://ollama.com/install.sh | sh
-#rm -f install.sh
+#For now use the custom ollama build as in R39 Jetpack native ollama is broken
+curl -fsSL https://ollama.com/install.sh | sh
+rm -f install.sh
 
 # 2. Configure Environment Variables
 echo "Configuring environment variables in $SERVICE_FILE..."
+
+sudo mkdir -p /etc/systemd/system/ollama.service.d
 
 # Backup existing service file
 sudo cp "$SERVICE_FILE" "${SERVICE_FILE}.bak"
 
 # Use a temporary file to construct the new service configuration
 cat <<EOF | sudo tee "$SERVICE_FILE" > /dev/null
-[Unit]
-Description=Ollama Service
-After=network-online.target
 
 [Service]
+ExecStart=
 ExecStart=/usr/local/bin/ollama serve
-User=ollama
-Group=ollama
+User=root
+Group=root
+SupplementaryGroups=video render
 Restart=always
 RestartSec=60
-Environment="PATH=$PATH"
-Environment="OLLAMA_LLM_LIBRARY=cuda"
-Environment="OLLAMA_IGPU_ENABLE=1"
+Environment="OLLAMA_DEBUG=1"
+Environment="OLLAMA_LLM_LIBRARY=cuda_v13"
 Environment="OLLAMA_HOST=0.0.0.0:11434"
 Environment="OLLAMA_NUM_GPU=99"
 Environment="OLLAMA_LOAD_TIMEOUT=3600"
@@ -60,10 +53,18 @@ Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
 Environment="OLLAMA_CONTEXT_LENGTH=65536"
 StandardOutput=append:$LOG_DIR/ollama.log
 StandardError=append:$LOG_DIR/ollama.log
-
-[Install]
-WantedBy=default.target
 EOF
+
+echo "--- Preparing Local Ollama Installation ---"
+sudo mkdir -p "$LOG_DIR"
+sudo chown ollama:ollama "$LOG_DIR"
+
+# Ensure the ollama user has hardware access to the new JetPack nodes
+if id -u ollama >/dev/null 2>&1; then
+    sudo usermod -aG video,render ollama
+    sudo chmod 666 /dev/dri/card* /dev/dri/renderD* /dev/nvhost* /dev/nvmap 2>/dev/null
+fi
+
 
 # 3. Reload and Restart
 echo "Reloading systemd and restarting Ollama..."

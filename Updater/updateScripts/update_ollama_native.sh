@@ -3,8 +3,8 @@
 # Default to the 30B coder model unless specified otherwise
 #MODEL_NAME=${1:-qwen3-coder:30b}
 #MODEL_NAME=${1:-deepseek-r1:32b}
-#MODEL_NAME=${1:-qwen3.8:27B}
-MODEL_NAME=${1:-qwen2.5:0.5b}
+MODEL_NAME=${1:-qwen3.8:27B}
+#MODEL_NAME=${1:-qwen2.5:0.5b}
 # Configuration
 SERVICE_NAME="ollama"
 SERVICE_FILE="/etc/systemd/system/ollama.service.d/override.conf"
@@ -37,7 +37,7 @@ SupplementaryGroups=video render
 Restart=always
 RestartSec=60
 Environment="OLLAMA_DEBUG=1"
-Environment="OLLAMA_LLM_LIBRARY=cuda_v13"
+Environment="OLLAMA_LLM_LIBRARY=cuda_jetpack6"
 Environment="OLLAMA_HOST=0.0.0.0:11434"
 Environment="OLLAMA_NUM_GPU=99"
 Environment="OLLAMA_LOAD_TIMEOUT=3600"

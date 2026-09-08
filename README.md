@@ -37,7 +37,7 @@ To securely route your local `qwen3-coder` traffic through your metrics pipeline
 
 *   **Display Name:** `Open WebUI (Orin)`
 *   **Provider API:** `OpenAI Compatible`
-*   **Base URL:** `https://<URL_OF_OPEN_WEBUI>/api`
+*   **Base URL:** `https://<URL_OF_OPEN_WEBUI>/ollama/v1`
 *   **API Key:** `<Your Open WebUI Personal Access Token>`
 *   **Models:** `qwen3-coder:latest or any other model to be used locally`
 

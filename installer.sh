@@ -1,6 +1,14 @@
 #!/bin/bash
 
 # ==========================================
+# COLOR CONFIGURATION
+# ==========================================
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# ==========================================
 # REPOSITORY CONFIGURATION
 # ==========================================
 REPO_URL="https://github.com/trex2000/orin.git"
@@ -16,12 +24,12 @@ if [ ! -f "$SWAP_FILE" ] && ! swapon --show | grep -q "$SWAP_FILE"; then
     sudo chmod 600 "$SWAP_FILE"
     sudo mkswap "$SWAP_FILE"
     sudo swapon "$SWAP_FILE"
-    
+
     if ! sudo grep -q "$SWAP_FILE" /etc/fstab; then
         echo "==> Adding swap file to /etc/fstab..."
         echo "$SWAP_FILE none swap sw 0 0" | sudo tee -a /etc/fstab
     fi
-    echo "==> 64GB swap successfully created, enabled, and registered."
+    echo -e "${GREEN}==> 64GB swap successfully created, enabled, and registered.${NC}"
 else
     echo "==> Swap file already exists or is active. Skipping creation."
 fi
@@ -33,12 +41,13 @@ UPGRADES=$(apt-get -s upgrade | awk '/^[0-9]+ upgraded,/ {print $1}')
 
 if [[ "$UPGRADES" =~ ^[1-9][0-9]*$ ]]; then
     echo "Found $UPGRADES package(s) to upgrade"
-    read -r -p " Would you like to perform update? [y/N]: " response
+    echo -e -n "${BLUE}Would you like to perform update? [y/N]: ${NC}"
+    read -r response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-	sudo apt upgrade -y
-        echo "✔ System update completed"
+        sudo apt upgrade -y
+        echo -e "${GREEN}✔ System update completed${NC}"
     else
-	echo "Skipped system update"
+        echo "Skipped system update"
     fi
 
 else
@@ -75,7 +84,7 @@ if [ ! -f /etc/profile.d/cuda.sh ]; then
     #echo 'export PATH=/usr/local/cuda/bin:$PATH' | sudo tee /etc/profile.d/cuda.sh >/dev/null
     #echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' | sudo tee -a /etc/profile.d/cuda.sh >/dev/null
     #sudo ln -sf /usr/local/cuda/bin/nvcc /usr/local/bin/nvcc
-    echo "CUDA environment profile created."
+    echo -e "${GREEN}CUDA environment profile created.${NC}"
 else
     echo "CUDA environment profile already exists."
 fi
@@ -111,7 +120,7 @@ if ! command -v docker >/dev/null 2>&1; then
     sudo systemctl enable --now docker
     # $USER automatically grabs the user running the script (e.g., cgmures)
     sudo usermod -aG docker "$USER"
-    echo "Docker installed and configured for user $USER."
+    echo -e "${GREEN}Docker installed and configured for user $USER.${NC}"
     echo "Note: Group changes may require a logout/login to fully take effect."
 else
     echo "Docker is already installed."
@@ -121,21 +130,21 @@ echo ">>> Checking if XRDP is installed..."
 if ! command -v xrdp >/dev/null 2>&1; then
     echo "XRDP not found. Installing and configuring..."
     sudo apt install xrdp -y
-    
+
     echo "Granting SSL Certificate Permissions..."
     sudo usermod -a -G ssl-cert xrdp
-    
+
     echo "Applying GNOME black screen fix..."
     # Check if the fix is already there to avoid duplicate entries
     if ! grep -q "unset DBUS_SESSION_BUS_ADDRESS" /etc/xrdp/startwm.sh; then
         sudo sed -i '/^test -x \/etc\/X11\/Xsession/i unset DBUS_SESSION_BUS_ADDRESS\nunset XDG_RUNTIME_DIR' /etc/xrdp/startwm.sh
     fi
-    
+
     sudo systemctl restart xrdp
-    
+
     echo "Allowing RDP port 3389 through UFW firewall..."
     sudo ufw allow 3389/tcp >/dev/null 2>&1 || true
-    echo "XRDP installation complete."
+    echo -e "${GREEN}XRDP installation complete.${NC}"
 else
     echo "XRDP is already installed."
 fi
@@ -152,7 +161,7 @@ if ! sudo grep -q "exec dbus-run-session -- startxfce4" "$TARGET_HOME/.xsession"
     sudo chmod +x "$TARGET_HOME/.xsession"
     sudo chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.xsession"
     sudo systemctl restart xrdp xrdp-sesman
-    echo ".xsession configured for XFCE."
+    echo -e "${GREEN}.xsession configured for XFCE.${NC}"
 else
     echo ".xsession is already correctly configured for XFCE. Skipping."
 fi
@@ -165,12 +174,12 @@ if [ -d "$REPO_DIR/.git" ]; then
     echo "Repository exists. Fetching updates and overwriting local modifications..."
     cd "$REPO_DIR" || exit 1
     sudo chown -R "$TARGET_USER:$TARGET_USER" /usr/local/bin/orin
-    git fetch --all
-    CURRENT_BRANCH=$(git branch --show-current)
-    sudo git reset --hard "origin/$CURRENT_BRANCH"
-    sudo git clean -fd
+    #git fetch --all
+    #CURRENT_BRANCH=$(git branch --show-current)
+    #sudo git reset --hard "origin/$CURRENT_BRANCH"
+    #sudo git clean -fd
     # Return to previous directory so the rest of the script doesn't break
-    cd .. 
+    cd ..
 else
     echo "Repository not found locally. Cloning..."
     sudo git clone "$REPO_URL"
@@ -187,10 +196,11 @@ if [ -d "Updater" ]; then
     shopt -s nocaseglob nullglob
     for script in Updater/updateScripts/*.sh; do
         script_name=$(basename "$script")
-        read -r -p "Do you want to copy and install '$script_name' to $INSTALL_DIR/Updater/updatescripts/? [y/N]: " response
+        echo -e -n "${BLUE}Do you want to copy and install '$script_name' to $INSTALL_DIR/Updater/updatescripts/? [y/N]: ${NC}"
+        read -r response
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
             sudo cp "$script" "$INSTALL_DIR/Updater/updatescripts/"
-            echo "✔ Installed $script_name"
+            echo -e "${GREEN}✔ Installed $script_name${NC}"
         else
             echo "Skipped $script_name"
         fi
@@ -218,24 +228,26 @@ echo ">>> Making all .sh scripts executable inside $REPO_DIR..."
 sudo find "$INSTALL_DIR" -type f -name "*.sh" -exec sudo chmod +x {} +
 
 if [ -x "$INSTALL_DIR/Updater/runUpdates.sh" ]; then
-    read -r -p "Would you like to execute installed scripts for the first time... [y/N]: " response
+    echo -e -n "${BLUE}Would you like to execute installed scripts for the first time... [y/N]: ${NC}"
+    read -r response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
         echo "Running Container updates"
-	sudo "$INSTALL_DIR/Updater/runUpdates.sh"
+        sudo "$INSTALL_DIR/Updater/runUpdates.sh"
     else
-	echo "Skipped running newly installed scripts"
+        echo "Skipped running newly installed scripts"
     fi
 else
-    echo "Error: $INSTALL_DIR/Updater/runUpdates.sh is not executable or not found."
+    echo -e "${RED}Error: $INSTALL_DIR/Updater/runUpdates.sh is not executable or not found.${NC}"
 fi
 
 # For absolutely no power limits (MAXN)
-read -r -p "Setting CPU clocks to uncapped. Warning: YOU must use an 90W 19V power supply, otherwise leave this unset [y/N]: " response
+echo -e -n "${BLUE}Setting CPU clocks to uncapped. Warning: YOU must use an 90W 19V power supply, otherwise leave this unset [y/N]: ${NC}"
+read -r response
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
     sudo nvpmodel -m 0
-    echo "✔ Powermode was set"
+    echo -e "${GREEN}✔ Powermode was set${NC}"
 else
     echo "Skipped setting powermode"
 fi
 
-echo ">>> Installation complete. Please reboot the system before use!"
+echo -e "${GREEN}>>> Installation complete. Please reboot the system before use!${NC}"
